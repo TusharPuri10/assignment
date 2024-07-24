@@ -14,7 +14,8 @@ import Menubar from "./Menubar";
 const fetchLocation = async () => {
     try{
         const header = headers()
-        const ip = '49.43.169.180';
+        const ip = '49.43.169.180'
+        // const ip = (header.get('x-forwarded-for') ?? '127.0.0.1').split(',')[0]
         const apiKey = '3CB7FC679654CD0EA5678D2013A7D804';
         console.log('IP:', ip);
         const url = `https://api.ip2location.io/?key=${apiKey}&ip=${ip}`;
