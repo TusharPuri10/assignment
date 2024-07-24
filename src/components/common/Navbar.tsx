@@ -1,3 +1,4 @@
+import { headers } from 'next/headers';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -10,14 +11,35 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ChevronDown, Settings, LogOut, Search } from 'lucide-react';
 import Menubar from "./Menubar";
 
+const fetchLocation = async () => {
+    try{
+        const header = headers()
+        const ip = '49.43.169.180';
+        const apiKey = '3CB7FC679654CD0EA5678D2013A7D804';
+        console.log('IP:', ip);
+        const url = `https://api.ip2location.io/?key=${apiKey}&ip=${ip}`;
+  
+          // Make a request to the IP2Location API
+          const response = await fetch(url);
+          if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const ipldata = await response.json();
+          console.log('IP location data:', ipldata);
+          return ipldata.country_code;
+  
+      } catch (error) {
+          console.error('Failed to fetch IP location data:', error);
+      }
+  };
 
-
-const Navbar = () => {
+const Navbar = async () => {
+    const country_code: string = await fetchLocation();
     return (
         <nav className="flex flex-row justify-between">
             <div className="flex items-start gap-x-2 my-auto">
                  {/* menubar */}
-                <Menubar />
+                <Menubar countrycode={country_code.toLowerCase()}/>
                 {/* logo */}
                 <div className="md:hidden block flex space-x-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 336.68 336.68"><rect width="336.68" height="336.68" rx="69.65" ry="69.65" style={{ strokeWidth: 0 }}></rect>

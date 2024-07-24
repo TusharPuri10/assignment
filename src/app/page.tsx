@@ -1,12 +1,8 @@
-import Link from "next/link";
-export default function Home() {
+export default function Page() {
+
   return (
-    <main>
+    <main className="text-center mt-10">
       landing page
-      <br />
-      <Link href="/announcements">
-      announcements
-      </Link>
     </main>
   );
 }
