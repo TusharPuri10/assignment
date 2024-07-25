@@ -22,7 +22,7 @@ import { addDays, format } from "date-fns"
 
 const Card = (props: { icon: React.JSX.Element, title: string, path: string, isOpen?: boolean, setIsOpen?: Dispatch<SetStateAction<boolean>>, type: string }) => {
     const path = usePathname();
-    const maincssClass = `h-10 flex flex-row space-x-10 my-[7px] text-gray-500 hover:text-gray-500 hover:bg-[#F0F0F0] rounded-md outline-0 group ${path === props.path && props.title !== "StockInsights" ? "bg-[#F0F0F0] text-gray-800 font-bold" : ""}  ${props.type === "sheet" ? "font-semibold" : ""}`;
+    const maincssClass = `h-10 flex flex-row space-x-10 my-[7px] text-gray-500 hover:text-gray-500 hover:bg-[#F0F0F0] rounded-md outline-0 group ${props.path.includes(path) && props.title !== "StockInsights" ? "bg-[#F0F0F0] text-gray-800 font-bold" : ""}  ${props.type === "sheet" ? "font-semibold" : ""}`;
     const textcssClass = `transition-opacity duration-200 ease-in-out text-sm my-[9px] ${props.title === "Options" ? "font-semibold" : ""} ${props.isOpen ? "opacity-100 visible" : "opacity-0 invisible"} group-hover:opacity-100 group-hover:visible`;
     return (
         ( props.title!=="Options" ?
