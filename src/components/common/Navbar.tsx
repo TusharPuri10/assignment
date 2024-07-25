@@ -14,9 +14,9 @@ import Menubar from "./Menubar";
 const fetchLocation = async () => {
     try{
         const header = headers()
-        const ip = '49.43.169.180'
-        // const ip = (header.get('x-forwarded-for') ?? '127.0.0.1').split(',')[0]
-        const apiKey = '3CB7FC679654CD0EA5678D2013A7D804';
+        // const ip = '49.43.169.180'
+        const ip = (header.get('x-forwarded-for') ?? '127.0.0.1').split(',')[0]
+        const apiKey = process.env.NEXT_PUBLIC_IP2LOCATION_API_KEY;
         console.log('IP:', ip);
         const url = `https://api.ip2location.io/?key=${apiKey}&ip=${ip}`;
   
@@ -40,7 +40,7 @@ const Navbar = async () => {
         <nav className="flex flex-row justify-between">
             <div className="flex items-start gap-x-2 my-auto">
                  {/* menubar */}
-                <Menubar countrycode={country_code.toLowerCase()}/>
+                <Menubar countrycode={country_code ? country_code.toLowerCase() : "in"}/>
                 {/* logo */}
                 <div className="md:hidden block flex space-x-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 336.68 336.68"><rect width="336.68" height="336.68" rx="69.65" ry="69.65" style={{ strokeWidth: 0 }}></rect>
