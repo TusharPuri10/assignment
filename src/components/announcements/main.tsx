@@ -1,14 +1,7 @@
 "use client"
 import { Announcement } from "@/lib/interface";
 import { Separator } from "@/components/ui/separator";
-import { Search, ListFilter, ChevronDown } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { ListFilter, ChevronDown } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Table,
@@ -18,21 +11,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination"
 import { DatePickerWithRange } from "@/components/ui/datepickerwithrange";
 import Link from "next/link";
 import { Fragment, useEffect, useState, useRef } from "react";
 import { useSearchParams } from 'next/navigation';
 import { SkeletonCard } from "./loading";
 import { Button } from "../ui/button";
+import { AnnouncementTypes } from "@/lib/utils";
+import Filter from "./Filter";
+import Pages from "./Pages";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetTrigger,
+  SheetFooter
+} from "@/components/ui/sheet"
 
 
 const Main = (props: {data: Announcement[], countrycode: string}) => {
@@ -49,7 +43,7 @@ const Main = (props: {data: Announcement[], countrycode: string}) => {
     const to_date = searchParams.get('to_date');
     const [query, setQuery] = useState<string | null>(null);
     const company_name = searchParams.get('company_name') || null;
-    const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
+    
     
 
     const addPage = (newPage: number) => {
@@ -69,110 +63,19 @@ const Main = (props: {data: Announcement[], countrycode: string}) => {
     }
     ), [loading];
   
-    const handlePageChange = (newPage: number) => {
-      window.history.pushState({}, '', addPage(newPage));
-      setLoading(true);
-    };
 
-    const handleSentimentChange = (sentiment: string) => {
-      const url = new URL(window.location.href);
-      const params = url.searchParams;
-      const sentiments = params.get('sentiment')?.split(',') || [];
     
-      if (sentiments.includes(sentiment)) {
-        // Remove the sentiment if it already exists
-        const newSentiments = sentiments.filter(s => s !== sentiment);
-        if (newSentiments.length > 0) {
-          params.set('sentiment', newSentiments.join(','));
-        } else {
-          params.delete('sentiment');
-        }
-      } else {
-        // Add the sentiment if it doesn't exist
-        sentiments.push(sentiment);
-        params.set('sentiment', sentiments.join(','));
-      }
-    
-      window.history.pushState({}, '', url.toString());
-      window.history.pushState({}, '', addPage(1));
-      setLoading(true);
-    };
-
-    const handleCategoryChange = (category: string) => {
-      const url = new URL(window.location.href);
-      const params = url.searchParams;
-      const categories = params.get('category')?.split(',') || [];
-    
-      if (categories.includes(category)) {
-        // Remove the category if it already exists
-        const newCategories = categories.filter(c => c !== category);
-        if (newCategories.length > 0) {
-          params.set('category', newCategories.join(','));
-        } else {
-          params.delete('category');
-        }
-      } else {
-        // Add the category if it doesn't exist
-        categories.push(category);
-        params.set('category', categories.join(','));
-      }
-    
-      window.history.pushState({}, '', url.toString());
-      window.history.pushState({}, '', addPage(1));
-      setLoading(true);
-    }
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value;
-      
-  
-      if (debounceTimeout.current) {
-        clearTimeout(debounceTimeout.current);
-      }
-  
-      debounceTimeout.current = setTimeout(() => {
-        setQuery(value);
-        setLoading(true);
-      }, 500);
-    };
-
     const clearAllFilter = () => {
       const url = new URL(window.location.href);
       url.searchParams.delete('sentiment');
       url.searchParams.delete('category');
       window.history.pushState({}, '', url.toString());
       window.history.pushState({}, '', addPage(1));
+      setQuery(null);
       setLoading(true);
     };
 
-    const AnnouncementTypes = [
-        "Company Mergers",
-        "Disposals and divestitures",
-        "Business Restructuring",
-        "Expansion Plans",
-        "Financial Troubles",
-        "Management Changes",
-        "Capital Structure Changes",
-        "Contract Awards",
-        "Legal Disputes",
-        "Payment Defaults",
-        "Credit Rating Changes",
-        "Product Launches",
-        "Operational Disruptions",
-        "Accounting Changes",
-        "Investments/Divestments",
-        "Dividend Policy Changes",
-        "Labor Issues",
-        "Investor Conferences",
-        "Earnings Reports",
-        "Delisting Actions",
-        "IPO Launches",
-        "Name Changes",
-        "Offer for Sale",
-        "US FDA Inspections",
-        "Earnings Calls",
-        "Other Situations",
-      ];
+    
 
       const [openRow, setOpenRow] = useState<string | null>(null);
 
@@ -196,60 +99,9 @@ const Main = (props: {data: Announcement[], countrycode: string}) => {
     return (
         <main className="h-[calc(100vh-82px)] flex md:ml-14 ml-0">
         {/* Filter */}
-        <div className="w-[13.8rem] text-black hidden lg:flex flex-col items-center fixed z-10">
-          <div className="text-left w-full px-8 py-6 text-sm font-medium text-gray-700">
-            Filter by
-          </div>
-          <div className="py-5">
-            <Search className="absolute ml-3 mt-[14px] z-0 pointer-none w-3 h-3 text-gray-400 " />
-            <input
-              onChange={handleChange}
-              placeholder="Type to search"
-              className="w-[11.2rem] h-10 text-xs outline-0 pl-7 outline-none border border-gray-300 rounded-md focus:ring-1 focus:ring-[#B04425] focus:border-transparent "
-            />
-          </div>
-          <div className="text-left w-full py-5 pl-8 pr-5 text-sm font-medium text-gray-700 flex justify-between">
-            <p>Watchlist</p>
-            <Checkbox className="my-auto" />
-          </div>
-          <Accordion type="multiple" className="w-full">
-            <AccordionItem value="item-1">
-              <AccordionTrigger className="text-sm text-gray-800 font-medium">
-                Sentiment
-              </AccordionTrigger>
-              <AccordionContent className="text-left w-full py-4 pl-8 pr-5 text-xs text-gray-500 flex flex-col space-y-3">
-                <div className="flex justify-between">
-                  <p>Positive</p>
-                  <Checkbox className="my-auto w-[14px] h-[14px]" checked={sentiments.includes("positive")} onClick={()=>handleSentimentChange("positive")}/>
-                </div>
-                <div className="flex justify-between">
-                  <p>Neutral</p>
-                  <Checkbox className="my-auto w-[14px] h-[14px]" checked={sentiments.includes("neutral")} onClick={()=>handleSentimentChange("neutral")}/>
-                </div>
-                <div className="flex justify-between">
-                  <p>Negative</p>
-                  <Checkbox className="my-auto w-[14px] h-[14px]" checked={sentiments.includes("negative")} onClick={()=>handleSentimentChange("negative")}/>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="item-2">
-              <AccordionTrigger className="text-sm text-gray-800 font-medium">
-                Category
-              </AccordionTrigger>
-              <AccordionContent className="text-left w-full text-xs text-gray-500">
-                <ScrollArea className="h-[calc(100vh-480px)] pl-8 pr-5 ">
-                  {AnnouncementTypes.map((type, index) => (
-                    <div key={index} className="flex justify-between py-2">
-                      <p>{type}</p>
-                      <Checkbox className="my-auto w-[14px] h-[14px]" checked={categories.includes((index+1).toString())} onClick={()=>handleCategoryChange((index+1).toString())}/>
-                    </div>
-                  ))}
-                </ScrollArea>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-          
-        </div>
+        {/* For laptop screen */}
+        <Filter setLoading={setLoading} setQuery={setQuery} />
+
         {/* Dashboard */}
         <ScrollArea className="h-[calc(100vh-82px)] z-0 w-screen">
         <div className="lg:ml-[13.8rem] ml-0  w-screen lg:w-5/6">
@@ -285,11 +137,33 @@ const Main = (props: {data: Announcement[], countrycode: string}) => {
                 </div>
               </div>
               <div className="flex flex-row space-x-3">
-                <div className="flex outline outline-1 outline-dashed outline-gray-300 rounded-sm h-fit px-1 my-auto">
-                  <ListFilter className="my-auto w-3.5 h-3.5" />
-                  <p className="my-auto text-xs font-medium text-gray-600 px-1">
-                    Filter
-                  </p>
+                <div className="outline outline-1 outline-dashed outline-gray-300 rounded-sm h-fit px-1 my-auto">
+                  <div className="flex lg:hidden">
+                    <Sheet>
+                        <SheetTrigger asChild className='ml-2 mr-3'>
+                          <div className="flex">
+                            <ListFilter className="my-auto w-3.5 h-3.5" />
+                            <p className="my-auto text-xs font-medium text-gray-600 px-1">
+                              Filter
+                            </p>
+                          </div>
+                        </SheetTrigger>
+                        <SheetContent side={"right"} className="w-[248px] px-[14px] pt-[12px] lg:hidden">
+                          <Filter setLoading={setLoading} setQuery={setQuery} type="sheet"/>
+                        <SheetFooter>
+                            <SheetClose asChild>
+                              <Button className="absolute bottom-6 right- bg-[#B04425] hover:bg-[#B04425]" onClick={()=>clearAllFilter()}>Clear All Filters</Button>
+                            </SheetClose>
+                          </SheetFooter>
+                        </SheetContent>
+                    </Sheet>
+                  </div>
+                  <div className="hidden lg:flex">
+                    <ListFilter className="my-auto w-3.5 h-3.5" />
+                    <p className="my-auto text-xs font-medium text-gray-600 px-1">
+                      Filter
+                    </p>
+                  </div> 
                 </div>
                 <div className="text-sm font-medium text-gray-500 my-auto">
                   Filtered Announcements: 809
@@ -435,39 +309,7 @@ const Main = (props: {data: Announcement[], countrycode: string}) => {
           <Separator className="bg-gray-200" />
           {/* Page Number */}
           <div className="my-8">
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem className={` ${page === 1 ? "pointer-events-none text-gray-300" : ""}`}>
-                <PaginationPrevious onClick={() => handlePageChange(page - 1)} />
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationLink
-                  onClick={() => handlePageChange(page > 2 ? page - 1 : 1)}
-                  isActive={page === 1}
-                  className={` ${page === 1 ? "bg-gray-100" : ""}`}
-                >
-                  {page > 2 ? page - 1 : 1}
-                </PaginationLink>
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationLink
-                  onClick={() => handlePageChange(page > 2 ? page : 2)}
-                  isActive={page !== 1}
-                  className={` ${page !== 1 ? "bg-gray-100" : ""}`}
-                >
-                  {page > 2 ? page : 2}
-                </PaginationLink>
-              </PaginationItem>
-              <PaginationItem className={` ${isEmpty ? "pointer-events-none text-gray-300" : ""}`}>
-                <PaginationLink onClick={() => handlePageChange(page > 2 ? page + 1 : 3)}>
-                  {page > 2 ? page + 1 : 3}
-                </PaginationLink>
-              </PaginationItem>
-              <PaginationItem className={` ${isEmpty ? "pointer-events-none text-gray-300" : ""}`}>
-                <PaginationNext onClick={() => handlePageChange(page + 1)} />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
+            <Pages setLoading={setLoading} page={page} isEmpty={isEmpty} />
           </div>
         </div>
         </ScrollArea>
