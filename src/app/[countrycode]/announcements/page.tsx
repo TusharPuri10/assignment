@@ -2,9 +2,8 @@ import { Announcement } from "@/lib/interface";
 import Main from "@/components/announcements/main";
 const fetchData = async () => {
   try {
-    const baseUrl = "http://localhost:3000"; // Replace with your actual base URL
     const response = await fetch(
-      `${baseUrl}/announcements-assigment-data.json`,
+      `${process.env.NEXT_PUBLIC_BASE_URL}/announcements-assigment-data.json`,
     );
     const result = await response.json();
     return result;
