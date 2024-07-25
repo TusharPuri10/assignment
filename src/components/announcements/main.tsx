@@ -29,8 +29,10 @@ import {
 } from "@/components/ui/pagination"
 import { DatePickerWithRange } from "@/components/ui/datepickerwithrange";
 import Link from "next/link";
-import { Fragment, useState } from "react";
-import { useSearchParams } from 'next/navigation'
+import { Fragment, useEffect, useState, useRef } from "react";
+import { useSearchParams } from 'next/navigation';
+import { SkeletonCard } from "./loading";
+import { Button } from "../ui/button";
 
 
 const Main = (props: {data: Announcement[], countrycode: string}) => {
@@ -38,14 +40,111 @@ const Main = (props: {data: Announcement[], countrycode: string}) => {
     const searchParams = useSearchParams()
   
     const page = parseInt(searchParams.get('page') || "1");
+    const sentiments = searchParams.get('sentiment')?.split(',') || []
+    const categories = searchParams.get('category')?.split(',') || []
     const itemsPerPage = 10;
     const startIndex = ((page) - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const from_date = searchParams.get('from_date');
     const to_date = searchParams.get('to_date');
-    const generateLink = (page: number) => {
-      return `/${props.countrycode}/announcements?page=${page}&from_date=${from_date}&to_date=${to_date}`;
+    const [query, setQuery] = useState<string | null>(null);
+    const company_name = searchParams.get('company_name') || null;
+    const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
+    
+
+    const addPage = (newPage: number) => {
+      const url = new URL(window.location.href);
+      url.searchParams.set('page', newPage.toString());
+      return url.toString();
     };
+
+
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+      const timeout = setTimeout(() => {
+        if(loading) setLoading(false);
+      }, 1000);
+      return () => clearTimeout(timeout);
+    }
+    ), [loading];
+  
+    const handlePageChange = (newPage: number) => {
+      window.history.pushState({}, '', addPage(newPage));
+      setLoading(true);
+    };
+
+    const handleSentimentChange = (sentiment: string) => {
+      const url = new URL(window.location.href);
+      const params = url.searchParams;
+      const sentiments = params.get('sentiment')?.split(',') || [];
+    
+      if (sentiments.includes(sentiment)) {
+        // Remove the sentiment if it already exists
+        const newSentiments = sentiments.filter(s => s !== sentiment);
+        if (newSentiments.length > 0) {
+          params.set('sentiment', newSentiments.join(','));
+        } else {
+          params.delete('sentiment');
+        }
+      } else {
+        // Add the sentiment if it doesn't exist
+        sentiments.push(sentiment);
+        params.set('sentiment', sentiments.join(','));
+      }
+    
+      window.history.pushState({}, '', url.toString());
+      window.history.pushState({}, '', addPage(1));
+      setLoading(true);
+    };
+
+    const handleCategoryChange = (category: string) => {
+      const url = new URL(window.location.href);
+      const params = url.searchParams;
+      const categories = params.get('category')?.split(',') || [];
+    
+      if (categories.includes(category)) {
+        // Remove the category if it already exists
+        const newCategories = categories.filter(c => c !== category);
+        if (newCategories.length > 0) {
+          params.set('category', newCategories.join(','));
+        } else {
+          params.delete('category');
+        }
+      } else {
+        // Add the category if it doesn't exist
+        categories.push(category);
+        params.set('category', categories.join(','));
+      }
+    
+      window.history.pushState({}, '', url.toString());
+      window.history.pushState({}, '', addPage(1));
+      setLoading(true);
+    }
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      
+  
+      if (debounceTimeout.current) {
+        clearTimeout(debounceTimeout.current);
+      }
+  
+      debounceTimeout.current = setTimeout(() => {
+        setQuery(value);
+        setLoading(true);
+      }, 500);
+    };
+
+    const clearAllFilter = () => {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('sentiment');
+      url.searchParams.delete('category');
+      window.history.pushState({}, '', url.toString());
+      window.history.pushState({}, '', addPage(1));
+      setLoading(true);
+    };
+
     const AnnouncementTypes = [
         "Company Mergers",
         "Disposals and divestitures",
@@ -86,8 +185,17 @@ const Main = (props: {data: Announcement[], countrycode: string}) => {
         });
       };
 
+      const isEmpty = props.data
+    .filter((announcement) => sentiments.length === 0 || sentiments.includes(announcement?.sentiment))
+    .filter((announcement) => categories.length === 0 || categories.includes(announcement?.type_id))
+    .filter((announcement) => query === null || announcement.summary?.toLowerCase().includes(query.toLowerCase()) || announcement.company_name?.toLowerCase().includes(query.toLowerCase()) || announcement.sub_type?.toLowerCase().includes(query.toLowerCase()) || AnnouncementTypes[parseInt(announcement.type_id)-1]?.toLowerCase().includes(query.toLowerCase()))
+    .filter((announcement) => company_name === null || announcement.company_name?.toLowerCase().includes(company_name.toLowerCase()))
+    .slice(startIndex, endIndex)
+    .length === 0;
+
     return (
         <main className="h-[calc(100vh-82px)] flex md:ml-14 ml-0">
+        {/* Filter */}
         <div className="w-[13.8rem] text-black hidden lg:flex flex-col items-center fixed z-10">
           <div className="text-left w-full px-8 py-6 text-sm font-medium text-gray-700">
             Filter by
@@ -95,6 +203,7 @@ const Main = (props: {data: Announcement[], countrycode: string}) => {
           <div className="py-5">
             <Search className="absolute ml-3 mt-[14px] z-0 pointer-none w-3 h-3 text-gray-400 " />
             <input
+              onChange={handleChange}
               placeholder="Type to search"
               className="w-[11.2rem] h-10 text-xs outline-0 pl-7 outline-none border border-gray-300 rounded-md focus:ring-1 focus:ring-[#B04425] focus:border-transparent "
             />
@@ -111,15 +220,15 @@ const Main = (props: {data: Announcement[], countrycode: string}) => {
               <AccordionContent className="text-left w-full py-4 pl-8 pr-5 text-xs text-gray-500 flex flex-col space-y-3">
                 <div className="flex justify-between">
                   <p>Positive</p>
-                  <Checkbox className="my-auto w-[14px] h-[14px]" />
+                  <Checkbox className="my-auto w-[14px] h-[14px]" checked={sentiments.includes("positive")} onClick={()=>handleSentimentChange("positive")}/>
                 </div>
                 <div className="flex justify-between">
                   <p>Neutral</p>
-                  <Checkbox className="my-auto w-[14px] h-[14px]" />
+                  <Checkbox className="my-auto w-[14px] h-[14px]" checked={sentiments.includes("neutral")} onClick={()=>handleSentimentChange("neutral")}/>
                 </div>
                 <div className="flex justify-between">
                   <p>Negative</p>
-                  <Checkbox className="my-auto w-[14px] h-[14px]" />
+                  <Checkbox className="my-auto w-[14px] h-[14px]" checked={sentiments.includes("negative")} onClick={()=>handleSentimentChange("negative")}/>
                 </div>
               </AccordionContent>
             </AccordionItem>
@@ -132,7 +241,7 @@ const Main = (props: {data: Announcement[], countrycode: string}) => {
                   {AnnouncementTypes.map((type, index) => (
                     <div key={index} className="flex justify-between py-2">
                       <p>{type}</p>
-                      <Checkbox className="my-auto w-[14px] h-[14px]" />
+                      <Checkbox className="my-auto w-[14px] h-[14px]" checked={categories.includes((index+1).toString())} onClick={()=>handleCategoryChange((index+1).toString())}/>
                     </div>
                   ))}
                 </ScrollArea>
@@ -141,9 +250,8 @@ const Main = (props: {data: Announcement[], countrycode: string}) => {
           </Accordion>
           
         </div>
-        
         {/* Dashboard */}
-        <ScrollArea className="h-[calc(100vh-82px)] z-0">
+        <ScrollArea className="h-[calc(100vh-82px)] z-0 w-screen">
         <div className="lg:ml-[13.8rem] ml-0  w-screen lg:w-5/6">
         <Separator orientation="vertical" className="bg-gray-200 fixed" />
           {/* Header */}
@@ -211,19 +319,42 @@ const Main = (props: {data: Announcement[], countrycode: string}) => {
           </div>
           <Separator className="bg-gray-200" />
           {/* Table  */}
+
           <Table className="text-gray-800">
-            <TableHeader>
+            {!loading && <TableHeader>
               <TableRow>
-                <TableHead className="text-center text-gray-800 px-1 md:px-5 w-28">Company</TableHead>
-                <TableHead className="text-gray-800 hidden md:table-cell">Category</TableHead>
-                <TableHead className="text-gray-800 hidden md:table-cell">Summary</TableHead>
+                <TableHead className="text-center text-gray-800 px-1 md:px-5 w-40">Company</TableHead>
+                <TableHead className="text-gray-800 hidden md:table-cell w-56">Category</TableHead>
+                <TableHead className="text-gray-800 hidden md:table-cell w-96">Summary</TableHead>
                 <TableHead className="text-center px-1 md:px-4 text-gray-800">Sentiment</TableHead>
-                <TableHead className="px-1 md:px-4 text-gray-800 hidden md:table-cell">Source</TableHead>
+                <TableHead className="px-1 md:px-4 text-gray-800 hidden md:table-cell w-40">Source</TableHead>
                 <TableHead className="text-center px-1 md:px-4 text-gray-800 md:hidden">Details</TableHead>
               </TableRow>
-            </TableHeader>
+            </TableHeader>}
             <TableBody>
-            {props.data.slice(startIndex, endIndex).map((announcement) => (
+            {loading && Array.from({ length: 11 }, (_, index) => index).map((index) => (
+                  <SkeletonCard key={index} />
+                )
+            )}
+            {!loading && isEmpty  && (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center text-gray-800 py-20 space-y-4">
+                  <svg className="mx-auto" width="53" height="52" viewBox="0 0 53 52" fill="none"><path d="M41.26 40.76L50.5 50M21.331 20.75L29.818 29.234M29.815 20.75L21.331 29.234M47.833 24.743C47.833 37.304 37.684 47.486 25.168 47.486C12.649 47.486 2.5 37.304 2.5 24.746C2.5 12.179 12.649 2 25.165 2C37.684 2 47.833 12.182 47.833 24.743Z" stroke="#D4D4D8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                  <div>
+                    <p className="text-md font-semibold text-black">No results found.</p>
+                    <p className="text-xs text-gray-400"> We can’t find any item matching your search</p>
+                  </div>
+                  <Button className="bg-[#B04425] hover:bg-[#B04425]" onClick={()=>clearAllFilter()}>Clear All Filters</Button>
+                </TableCell>
+              </TableRow>
+            )}
+            {!loading && props.data
+            .filter((announcement) => sentiments.length === 0 || sentiments.includes(announcement.sentiment))
+            .filter((announcement) => categories.length === 0 || categories.includes(announcement.type_id))
+            .filter((announcement) => query === null || announcement.summary?.toLowerCase().includes(query.toLowerCase()) || announcement.company_name?.toLowerCase().includes(query.toLowerCase()) || announcement.sub_type?.toLowerCase().includes(query.toLowerCase()) || AnnouncementTypes[parseInt(announcement.type_id)-1]?.toLowerCase().includes(query.toLowerCase()))
+            .filter((announcement) => company_name === null || announcement.company_name?.toLowerCase().includes(company_name.toLowerCase()))
+            .slice(startIndex, endIndex)
+            .map((announcement) => (
           <Fragment key={announcement._id.$oid}>
             <TableRow onClick={() => setOpenRow(openRow === announcement._id.$oid ? null : announcement._id.$oid)} className="cursor-pointer">
               <TableCell className="text-left text-sm text-gray-900 w-28 space-y-2 pl-11 pr-2">
@@ -306,26 +437,34 @@ const Main = (props: {data: Announcement[], countrycode: string}) => {
           <div className="my-8">
           <Pagination>
             <PaginationContent>
-              <PaginationItem className={` ${page===1 ? "pointer-events-none text-gray-300" : ""}`}>
-                <PaginationPrevious href={generateLink(page-1)} />
+              <PaginationItem className={` ${page === 1 ? "pointer-events-none text-gray-300" : ""}`}>
+                <PaginationPrevious onClick={() => handlePageChange(page - 1)} />
               </PaginationItem>
-              <PaginationItem >
-                <PaginationLink href={generateLink(page>2? page-1 : 1)} isActive={page===1} className={` ${page===1 ? "bg-gray-100" : ""}`}>
-                  {page>2? page-1 : 1}
+              <PaginationItem>
+                <PaginationLink
+                  onClick={() => handlePageChange(page > 2 ? page - 1 : 1)}
+                  isActive={page === 1}
+                  className={` ${page === 1 ? "bg-gray-100" : ""}`}
+                >
+                  {page > 2 ? page - 1 : 1}
                 </PaginationLink>
               </PaginationItem>
               <PaginationItem>
-                <PaginationLink href={generateLink(page>2? page : 2)} isActive={(page!==1)} className={` ${page!==1 ? "bg-gray-100" : ""}`}>
-                {page>2? page : 2}
+                <PaginationLink
+                  onClick={() => handlePageChange(page > 2 ? page : 2)}
+                  isActive={page !== 1}
+                  className={` ${page !== 1 ? "bg-gray-100" : ""}`}
+                >
+                  {page > 2 ? page : 2}
                 </PaginationLink>
               </PaginationItem>
-              <PaginationItem>
-                <PaginationLink href={generateLink(page>2? page+1 : 3)}>
-                  {page>2? page+1 : 3}
+              <PaginationItem className={` ${isEmpty ? "pointer-events-none text-gray-300" : ""}`}>
+                <PaginationLink onClick={() => handlePageChange(page > 2 ? page + 1 : 3)}>
+                  {page > 2 ? page + 1 : 3}
                 </PaginationLink>
               </PaginationItem>
-              <PaginationItem>
-                <PaginationNext href={generateLink(page+1)} />
+              <PaginationItem className={` ${isEmpty ? "pointer-events-none text-gray-300" : ""}`}>
+                <PaginationNext onClick={() => handlePageChange(page + 1)} />
               </PaginationItem>
             </PaginationContent>
           </Pagination>

@@ -10,6 +10,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ChevronDown, Settings, LogOut, Search } from 'lucide-react';
 import Menubar from "./Menubar";
+import SearchCompany from './SearchCompany';
 
 const fetchLocation = async () => {
     try{
@@ -52,30 +53,7 @@ const Navbar = async () => {
                 </div>
             </div>
             <div className="md:space-x-12  md:mx-10 mx-2 flex md:my-6 my-3">
-                {/* seachbar */}
-                <div className="relative hidden md:flex items-center text-lg md:text-md lg:text-sm">
-                    <Search className="absolute ml-2  pointer-none w-4 h-4 text-gray-500 " />
-                    <input
-                        placeholder="Search Companies"
-                        className="md:w-80 w-20 h-7 text-sm outline-0 pl-8 outline-none border border-gray-300 rounded-md focus:ring-1 focus:ring-[#B04425] focus:border-transparent "
-                    />
-                </div>
-                {/* seachbar in mobile */}
-                <div className='md:hidden'>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger className="flex outline-0 group">
-                            <Search className="pointer-none w-5 h-5 text-gray-500 mt-[10px]" style={{strokeWidth: 2.5}}/>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="font-semibold p-0 mt-2 mx-10">
-                            <Search className="absolute ml-2  mt-4 pointer-none w-4 h-4 text-gray-500 " />
-                            <input
-                                placeholder="Search Companies"
-                                className="md:w-80 w-80 h-12 outline-0 pl-8 outline-none border border-gray-300 rounded-md focus:ring-1 focus:ring-[#B04425] focus:border-transparent "
-                            />
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
-
+                <SearchCompany/>    
                 {/* username */}
                 <DropdownMenu>
                 <DropdownMenuTrigger className="flex space-x-2 outline-0 group">
